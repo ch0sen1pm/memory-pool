@@ -85,7 +85,7 @@ deallocate(ptr)
 
 ### 第一阶段：基础分配器（单线程）
 
-- [ ] **Fixed-size allocator** — 固定大小块分配/回收，freelist 复用。构造函数预分配一块大内存，切等大小块，用单链表管理空闲块
+- [x] **Fixed-size allocator** — 固定大小块分配/回收，freelist 复用（7/18）
 - [ ] **Slab allocator** — 按 2 的幂次管理多尺寸 allocator（8/16/32/64/128/256...）。请求的大小向上取整到最近的 slab size
 - [ ] **Benchmark vs malloc** — 单线程 100 万次 alloc/free 性能对比
 
