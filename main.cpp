@@ -1,21 +1,35 @@
-#include "slab_allocator.h"
-#include <cassert>
+#include "thread_cache.h"
 #include <iostream>
+#include <thread>
+#include <vector>
+#include <cassert>
 
 int main() {
-    SlabAllocator alloc;
+    ThreadCache<32> cache;
 
-    // 不同大小的分配请求
-    void* p1 = alloc.allocate(10);   // roundUp→16 → slab16
-    void* p2 = alloc.allocate(50);   // roundUp→64 → slab64
-    void* p3 = alloc.allocate(200);  // roundUp→256 → slab256
+    // 两个线程并发分配/回收 1000 次——同一个 cache 对象，无锁
+    std::thread t1([&]() {
+        for (int i = 0; i < 1000; i++) {
+            void* p = cache.allocate();
+            assert(p != nullptr);
+            cache.deallocate(p);
+        }
+        std::cout << "thread " << std::this_thread::get_id()
+                  << ": 1000 alloc+free OK\n";
+    });
 
-    alloc.deallocate(p1, 10);
-    void* p4 = alloc.allocate(12);   // roundUp→16，应复用 p1
+    std::thread t2([&]() {
+        for (int i = 0; i < 1000; i++) {
+            void* p = cache.allocate();
+            assert(p != nullptr);
+            cache.deallocate(p);
+        }
+        std::cout << "thread " << std::this_thread::get_id()
+                  << ": 1000 alloc+free OK\n";
+    });
 
-    assert(p1 == p4);  // 16 字节的 freelist 回收复用
-    alloc.deallocate(p2, 50);
-    alloc.deallocate(p3, 200);
+    t1.join();
+    t2.join();
 
-    std::cout << "SlabAllocator: multi-size alloc/dealloc OK\n";
+    std::cout << "ThreadCache: both threads completed without lock\n";
 }
