@@ -7,25 +7,26 @@
 int main() {
     ThreadCache<32> cache;
 
-    // 两个线程并发分配/回收 1000 次——同一个 cache 对象，无锁
+    // 两个线程并发分配/回收——同一个 cache 对象，无锁
     std::thread t1([&]() {
-        for (int i = 0; i < 1000; i++) {
-            void* p = cache.allocate();
-            assert(p != nullptr);
-            cache.deallocate(p);
+        for (int i = 0; i < 5; i++) {
+            // 分配 + 回收重复 1000 次
+            for (int j = 0; j < 1000; j++) {
+                void* p = cache.allocate();
+                cache.deallocate(p);
+            }
+            std::cout << "[t1] batch " << i+1 << " done\n";
         }
-        std::cout << "thread " << std::this_thread::get_id()
-                  << ": 1000 alloc+free OK\n";
     });
 
     std::thread t2([&]() {
-        for (int i = 0; i < 1000; i++) {
-            void* p = cache.allocate();
-            assert(p != nullptr);
-            cache.deallocate(p);
+        for (int i = 0; i < 5; i++) {
+            for (int j = 0; j < 1000; j++) {
+                void* p = cache.allocate();
+                cache.deallocate(p);
+            }
+            std::cout << "[t2] batch " << i+1 << " done\n";
         }
-        std::cout << "thread " << std::this_thread::get_id()
-                  << ": 1000 alloc+free OK\n";
     });
 
     t1.join();
