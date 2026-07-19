@@ -1,13 +1,24 @@
+#include "fixed_allocator.h"
 #include "lockfree_stack.h"
 #include <iostream>
 #include <thread>
 #include <cassert>
+#include <cstdint>
 
 struct Data {
     int value;
 };
 
 int main() {
+    // 对齐测试
+    FixedAllocator<32, 64> alloc(4);
+    void* p = alloc.allocate();
+    uintptr_t addr = reinterpret_cast<uintptr_t>(p);
+    std::cout << "align test: " << (addr % 64 == 0 ? "OK" : "FAIL")
+              << " (addr=" << addr << ")\n";
+    alloc.deallocate(p);
+
+    // LockFreeStack 测试
     LockFreeStack<Data> stack;
 
     // 临时分配节点（用 new 模拟，实际场景从内存池取）
