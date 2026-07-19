@@ -10,13 +10,25 @@ struct Data {
 };
 
 int main() {
-    // 对齐测试
-    FixedAllocator<32, 64> alloc(4);
-    void* p = alloc.allocate();
-    uintptr_t addr = reinterpret_cast<uintptr_t>(p);
-    std::cout << "align test: " << (addr % 64 == 0 ? "OK" : "FAIL")
-              << " (addr=" << addr << ")\n";
-    alloc.deallocate(p);
+    // 对齐测试——非 debug 模式
+    {
+        FixedAllocator<32, 64> alloc(4);
+        void* p = alloc.allocate();
+        uintptr_t addr = reinterpret_cast<uintptr_t>(p);
+        std::cout << "align test: " << (addr % 64 == 0 ? "OK" : "FAIL")
+                  << " (addr=" << addr << ")\n";
+        alloc.deallocate(p);
+    }
+
+    // Debug guard 测试——debug 模式，越界写应触发 assert
+    {
+        FixedAllocator<32, 64, true> alloc(4);
+        void* p = alloc.allocate();
+        char* buf = static_cast<char*>(p);
+        buf[56] = 'X';  // b+16+56 = b+72，恰好踩到后 guard
+        alloc.deallocate(p);  // <- assert 应该炸
+    }
+    std::cout << "Debug guard: OK\n";
 
     // LockFreeStack 测试
     LockFreeStack<Data> stack;
