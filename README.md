@@ -87,7 +87,7 @@ deallocate(ptr)
 
 - [x] **Fixed-size allocator** — 固定大小块分配/回收，freelist 复用（7/18）
 - [x] **Slab allocator** — 多尺寸 slab（8/16/32/64/128/256），roundUp 位运算对齐（7/19）
-- [ ] **Benchmark vs malloc** — 单线程 100 万次 alloc/free 性能对比
+- [x] **Benchmark vs malloc** — 固定大小持平/更优，随机大小略慢（if-else 开销），毫秒级差距
 
 ### 第二阶段：多线程优化
 
