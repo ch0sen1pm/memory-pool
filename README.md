@@ -91,7 +91,7 @@ deallocate(ptr)
 
 ### 第二阶段：多线程优化
 
-- [ ] **Thread-local cache** — 每个线程独立的 freelist，无锁分配。缓存空/满时批量与 central cache 交互
+- [x] **Thread-local cache** — 每个线程独立的 freelist，无锁分配。thread_local + static 实现（7/19）
 - [ ] **Central cache** — 全局池，带自旋锁。线程间批量调剂内存，严格控制锁粒度
 - [ ] **CAS 原子操作优化** — 用 `std::atomic` 的 `compare_exchange_weak` 实现无锁 freelist pop/push
 
