@@ -1,48 +1,86 @@
-#include "central_cache.h"
+#include "lockfree_stack.h"
 #include <iostream>
 #include <thread>
 #include <cassert>
 
-int main() {
-    CentralCache<32> pool;
+struct Data {
+    int value;
+};
 
-    // 4 个线程争用同一个 CentralCache（有锁）
+int main() {
+    LockFreeStack<Data> stack;
+
+    // 临时分配节点（用 new 模拟，实际场景从内存池取）
+    auto* a = new LockFreeStack<Data>::Node;
+    auto* b = new LockFreeStack<Data>::Node;
+    auto* c = new LockFreeStack<Data>::Node;
+    a->data.value = 1;
+    b->data.value = 2;
+    c->data.value = 3;
+
+    // push 三个
+    stack.push(a);
+    stack.push(b);
+    stack.push(c);
+
+    // pop 三个
+    auto* x = stack.pop();
+    auto* y = stack.pop();
+    auto* z = stack.pop();
+
+    std::cout << "pop: " << x->data.value << " "
+              << y->data.value << " "
+              << z->data.value << "\n";
+    // LIFO: 3 2 1
+
+    delete a; delete b; delete c;
+
+    // 多线程测试：4 线程各 push+pop 1000 次
     std::thread t1([&]() {
         for (int i = 0; i < 1000; i++) {
-            void* p = pool.allocate();
-            assert(p != nullptr);
-            pool.deallocate(p);
+            auto* n = new LockFreeStack<Data>::Node;
+            n->data.value = i;
+            stack.push(n);
+            auto* p = stack.pop();
+            if (p) delete p;
         }
-        std::cout << "[t1] done\n";
+        printf("[t1] 1000 ops done\n");
     });
 
     std::thread t2([&]() {
         for (int i = 0; i < 1000; i++) {
-            void* p = pool.allocate();
-            assert(p != nullptr);
-            pool.deallocate(p);
+            auto* n = new LockFreeStack<Data>::Node;
+            n->data.value = i;
+            stack.push(n);
+            auto* p = stack.pop();
+            if (p) delete p;
         }
-        std::cout << "[t2] done\n";
+        printf("[t2] 1000 ops done\n");
     });
 
     std::thread t3([&]() {
         for (int i = 0; i < 1000; i++) {
-            void* p = pool.allocate();
-            assert(p != nullptr);
-            pool.deallocate(p);
+            auto* n = new LockFreeStack<Data>::Node;
+            n->data.value = i;
+            stack.push(n);
+            auto* p = stack.pop();
+            if (p) delete p;
         }
-        std::cout << "[t3] done\n";
+        printf("[t3] 1000 ops done\n");
     });
 
     std::thread t4([&]() {
         for (int i = 0; i < 1000; i++) {
-            void* p = pool.allocate();
-            assert(p != nullptr);
-            pool.deallocate(p);
+            auto* n = new LockFreeStack<Data>::Node;
+            n->data.value = i;
+            stack.push(n);
+            auto* p = stack.pop();
+            if (p) delete p;
         }
-        std::cout << "[t4] done\n";
+        printf("[t4] 1000 ops done\n");
     });
 
     t1.join(); t2.join(); t3.join(); t4.join();
-    std::cout << "CentralCache: 4 threads OK (with mutex)\n";
+    std::cout << "LockFreeStack: 4 threads OK (no mutex)\n"
+              << std::flush;
 }
