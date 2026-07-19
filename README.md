@@ -98,7 +98,7 @@ deallocate(ptr)
 ### 第三阶段：工程化
 
 - [x] **内存对齐** — alignas + stride 向上取整，支持 SIMD（7/19）
-- [ ] **Debug 模式** — 检测 double-free、内存泄漏、越界写
+- [x] **Debug 模式** — guard bytes 检测越界写，assert 崩（7/19）
 - [ ] **Benchmark vs jemalloc** — 多线程混合大小分配性能对比
 
 ## Quick Start
