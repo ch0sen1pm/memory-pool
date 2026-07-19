@@ -1,36 +1,48 @@
-#include "thread_cache.h"
+#include "central_cache.h"
 #include <iostream>
 #include <thread>
-#include <vector>
 #include <cassert>
 
 int main() {
-    ThreadCache<32> cache;
+    CentralCache<32> pool;
 
-    // 两个线程并发分配/回收——同一个 cache 对象，无锁
+    // 4 个线程争用同一个 CentralCache（有锁）
     std::thread t1([&]() {
-        for (int i = 0; i < 5; i++) {
-            // 分配 + 回收重复 1000 次
-            for (int j = 0; j < 1000; j++) {
-                void* p = cache.allocate();
-                cache.deallocate(p);
-            }
-            std::cout << "[t1] batch " << i+1 << " done\n";
+        for (int i = 0; i < 1000; i++) {
+            void* p = pool.allocate();
+            assert(p != nullptr);
+            pool.deallocate(p);
         }
+        std::cout << "[t1] done\n";
     });
 
     std::thread t2([&]() {
-        for (int i = 0; i < 5; i++) {
-            for (int j = 0; j < 1000; j++) {
-                void* p = cache.allocate();
-                cache.deallocate(p);
-            }
-            std::cout << "[t2] batch " << i+1 << " done\n";
+        for (int i = 0; i < 1000; i++) {
+            void* p = pool.allocate();
+            assert(p != nullptr);
+            pool.deallocate(p);
         }
+        std::cout << "[t2] done\n";
     });
 
-    t1.join();
-    t2.join();
+    std::thread t3([&]() {
+        for (int i = 0; i < 1000; i++) {
+            void* p = pool.allocate();
+            assert(p != nullptr);
+            pool.deallocate(p);
+        }
+        std::cout << "[t3] done\n";
+    });
 
-    std::cout << "ThreadCache: both threads completed without lock\n";
+    std::thread t4([&]() {
+        for (int i = 0; i < 1000; i++) {
+            void* p = pool.allocate();
+            assert(p != nullptr);
+            pool.deallocate(p);
+        }
+        std::cout << "[t4] done\n";
+    });
+
+    t1.join(); t2.join(); t3.join(); t4.join();
+    std::cout << "CentralCache: 4 threads OK (with mutex)\n";
 }
